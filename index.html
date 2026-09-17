@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&family=Noto+Serif+Bengali:wght@400;500;600;700;800&family=Hind+Siliguri:wght@300;400;500;600;700&family=Baloo+Da+2:wght@400;500;600;700;800&family=Atma:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com">  </script>
 <script>
 tailwind.config = {
   theme: {
@@ -48,8 +48,6 @@ tailwind.config = {
     cursor: text;
     outline: none;
     transition: background .15s, box-shadow .15s;
-    display: inline-block;
-    min-width: 3ch;
     min-height: 1.2em;
   }
   #sheet [data-field]:hover {
@@ -61,13 +59,40 @@ tailwind.config = {
     border-radius: 3px;
     box-shadow: 0 0 0 2px rgba(29,78,216,.28);
   }
-  /* when empty, show a soft click-target hint only on hover */
-  #sheet [data-field]:empty:hover::after {
-    content: "click to type";
-    color: #cbd5e1;
-    font-size: 0.7em;
-    font-weight: 500;
-    margin-left: 4px;
+  #sheet b[data-field]:empty::before {
+    content: attr(data-placeholder);
+    color: #94a3b8;
+    font-weight: 600;
+  }
+
+  /* -------- multi-page preview -------- */
+  .sheet-pages {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    align-items: center;
+  }
+  .page-wrap {
+    position: relative;
+    background: #fff;
+    box-shadow: 0 12px 45px rgba(15,42,92,.18);
+  }
+  .page-number {
+    position: absolute;
+    top: -22px;
+    left: 0;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .5px;
+    color: #64748b;
+    text-transform: uppercase;
+  }
+  #sheet {
+    background: #fff;
+    font-family: 'Noto Sans Bengali', system-ui, sans-serif;
+    color: #0f172a;
+    position: relative;
+    overflow: hidden;
   }
 
   @media print {
@@ -75,10 +100,13 @@ tailwind.config = {
     body { background: #fff !important; display: block !important; }
     main { display: block !important; }
     .preview-area { padding: 0 !important; overflow: visible !important; }
-    .sheet-wrap { box-shadow: none !important; }
+    .sheet-pages { gap: 0 !important; }
+    .page-wrap { box-shadow: none !important; page-break-after: always; break-after: page; }
+    .page-wrap:last-child { page-break-after: auto; break-after: auto; }
+    .page-number { display: none !important; }
     #sheet { padding: 0 !important; }
     #sheet [data-field] { background: transparent !important; box-shadow: none !important; }
-    #sheet [data-field]:empty:hover::after { content: "" !important; }
+    #sheet b[data-field]:empty::before { content: "______________"; color: #0f2a5c; }
   }
 </style>
 </head>
@@ -89,11 +117,14 @@ tailwind.config = {
 <header class="no-print sticky top-0 z-30 bg-gradient-to-br from-brand to-brand-light text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
   <h1 class="flex items-center gap-3 tracking-wide">
     <span class="text-2xl font-extrabold tracking-wider">TPRDM</span>
-    <span class="text-[11px] font-semibold text-white/85 border-l border-white/30 pl-3 leading-tight">
+    <span class="text-[11px] font-semibold text-white/85 border-l border-white/30 pl-3 leading-tight"> 
       Training Project<br>Result Doc Maker
     </span>
     <span id="sizeBadge" class="text-[10px] uppercase tracking-widest font-semibold bg-white/20 border border-white/30 rounded-full px-2.5 py-0.5 ml-1">
       210 × 297 mm
+    </span>
+    <span id="pageBadge" class="text-[10px] uppercase tracking-widest font-semibold bg-emerald-500/30 border border-emerald-200/40 rounded-full px-2.5 py-0.5 ml-1">
+      1 page
     </span>
   </h1>
 
@@ -184,18 +215,28 @@ tailwind.config = {
         </button>
       </div>
 
-      <div>
-        <label for="pagePad" class="block text-[11.5px] font-semibold text-slate-600 mb-1">
-          Sheet Padding <span class="font-normal text-slate-400">(px on screen)</span>
-        </label>
-        <input type="number" id="pagePad" value="40" min="0" max="200"
-          class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold
-                 outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200" />
+      <div class="grid grid-cols-2 gap-2 mb-3">
+        <div>
+          <label for="pagePad" class="block text-[11.5px] font-semibold text-slate-600 mb-1">
+            Padding <span class="font-normal text-slate-400">(px)</span>
+          </label>
+          <input type="number" id="pagePad" value="40" min="0" max="200"
+            class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold
+                   outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200" />
+        </div>
+        <div>
+          <label for="pageGap" class="block text-[11.5px] font-semibold text-slate-600 mb-1">
+            Page Gap <span class="font-normal text-slate-400">(px)</span>
+          </label>
+          <input type="number" id="pageGap" value="30" min="0" max="200"
+            class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold
+                   outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200" />
+        </div>
       </div>
 
-      <p class="text-[10.5px] text-slate-500 mt-3 leading-relaxed">
-        Preview at <b>1 mm ≈ 3.78 px</b>. The PDF output will match exactly.
-      </p>
+      <div class="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-[11.5px] leading-relaxed px-3 py-2.5">
+        📄 Content flows onto extra pages automatically when it overflows. Extra pages match the chosen size exactly.
+      </div>
     </div>
 
     <!-- ============================================= -->
@@ -288,17 +329,16 @@ tailwind.config = {
     <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">ব্যাচ ও জেলা</h2>
 
     <div class="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-[11.5px] leading-relaxed px-3 py-2.5 mb-3.5">
-      💡 <b>Labels</b> and <b>values</b> are editable directly on the sheet — just click and type.<br>
-      Empty fields stay fully blank (no dashes, no placeholder).
+      💡 <b>Labels</b> and <b>values</b> can both be typed directly on the sheet.<br>
+      Labels default to <b>ব্যাচ নং</b> and <b>জেলা</b>.
     </div>
 
-    <!-- Labels row -->
     <div class="grid grid-cols-2 gap-2.5 mb-3">
       <div>
         <label for="batchLabel" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
           Label 1 <span class="font-normal text-slate-400 text-[11px]">(Batch)</span>
         </label>
-        <input type="text" id="batchLabel" placeholder="(empty)"
+        <input type="text" id="batchLabel" value="ব্যাচ নং"
           class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
                  outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali" />
       </div>
@@ -306,13 +346,12 @@ tailwind.config = {
         <label for="districtLabel" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
           Label 2 <span class="font-normal text-slate-400 text-[11px]">(District)</span>
         </label>
-        <input type="text" id="districtLabel" placeholder="(empty)"
+        <input type="text" id="districtLabel" value="জেলা"
           class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
                  outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali" />
       </div>
     </div>
 
-    <!-- Values row -->
     <div class="grid grid-cols-2 gap-2.5">
       <div class="mb-3.5">
         <label for="batch" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
@@ -432,9 +471,7 @@ tailwind.config = {
 
   <!-- ============ RIGHT : PREVIEW ============ -->
   <section class="preview-area p-6 flex justify-center items-start overflow-auto">
-    <div class="sheet-wrap bg-white shadow-sheet">
-      <div id="sheet" class="bg-white font-bengali text-slate-900"></div>
-    </div>
+    <div id="sheet" class="sheet-pages"></div>
   </section>
 </main>
 
@@ -488,7 +525,77 @@ tailwind.config = {
 127
 128
 129
-130`;
+130
+131
+132
+133
+134
+135
+136
+137
+138
+139
+140
+141
+142
+143
+144
+145
+146
+147
+148
+149
+150
+151
+152
+153
+154
+155
+156
+157
+158
+159
+160
+161
+162
+163
+164
+165
+166
+167
+168
+169
+170
+171
+172
+173
+174
+175
+176
+177
+178
+179
+180
+181
+182
+183
+184
+185
+186
+187
+188
+189
+190
+191
+192
+193
+194
+195
+196
+197
+198
+199
+200`;
 
   const PRESETS = {
     "a4-portrait":     { w: 210, h: 297 },
@@ -499,12 +606,7 @@ tailwind.config = {
     "letter-landscape":{ w: 279, h: 216 },
   };
 
-  const UNIT_TO_MM = {
-    mm: 1,
-    cm: 10,
-    in: 25.4,
-    px: 25.4 / 96,
-  };
+  const UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4, px: 25.4 / 96 };
   const MM_TO_PX = 3.7795275591;
 
   const FONT_MAP = {
@@ -573,19 +675,41 @@ tailwind.config = {
     style.textContent = `@page { size: ${pageWmm}mm ${pageHmm}mm; margin: 0; }`;
   }
 
+  /* ===================================================================
+     PAGE SIZE / STYLE
+     =================================================================== */
+  function getMetrics() {
+    const padPx = Number(val("pagePad"));
+    const gapPx = Number(val("pageGap"));
+    return {
+      wPx: Math.round(pageWmm * MM_TO_PX),
+      hPx: Math.round(pageHmm * MM_TO_PX),
+      padPx: isNaN(padPx) ? 40 : padPx,
+      gapPx: isNaN(gapPx) ? 30 : gapPx,
+    };
+  }
+
   function applyPageSize() {
-    const sheet = $("sheet");
-    const pad = Number(val("pagePad"));
-    const padPx = isNaN(pad) ? 40 : pad;
+    const m = getMetrics();
+    const pages = document.querySelectorAll("#sheet .page-wrap");
 
-    const wPx = Math.round(pageWmm * MM_TO_PX);
-    const hPx = Math.round(pageHmm * MM_TO_PX);
+    pages.forEach((wrap) => {
+      wrap.style.width = m.wPx + "px";
+      wrap.style.height = m.hPx + "px";
+      wrap.style.overflow = "hidden";
+      wrap.style.boxSizing = "border-box";
 
-    sheet.style.width = wPx + "px";
-    sheet.style.minHeight = hPx + "px";
-    sheet.style.padding = padPx + "px";
-    sheet.style.boxSizing = "border-box";
-    sheet.style.fontFamily = FONT_MAP[bnFontKey] || FONT_MAP.bengali;
+      const inner = wrap.querySelector(".page-inner");
+      if (inner) {
+        inner.style.padding = m.padPx + "px";
+        inner.style.width = "100%";
+        inner.style.height = "100%";
+        inner.style.boxSizing = "border-box";
+        inner.style.fontFamily = FONT_MAP[bnFontKey] || FONT_MAP.bengali;
+      }
+    });
+
+    $("sheet").style.gap = m.gapPx + "px";
 
     const label = `${displaySize(pageWmm)} × ${displaySize(pageHmm)} ${currentUnit}`;
     $("sizeIndicator").textContent = label;
@@ -594,23 +718,25 @@ tailwind.config = {
     updatePrintPageRule();
   }
 
-  function render() {
+  /* ===================================================================
+     BUILD PAGE HTML (a single sheet)
+     =================================================================== */
+  function buildPageBlocks() {
     const school         = val("school");
     const exam           = val("exam");
-    const batchLabel     = val("batchLabel");
-    const districtLabel  = val("districtLabel");
+    const batchLabel     = val("batchLabel") || "ব্যাচ নং";
+    const districtLabel  = val("districtLabel") || "জেলা";
     const batch          = val("batch");
     const district       = val("district");
     const title          = val("title");
-    const separator      = $("separator").value;
-    const beforeText     = $("beforeText").value;
-
-    rolls = parseRolls($("rolls").value);
+    const beforeText     = val("beforeText");
 
     const S = fontScale;
     const px = (base) => (base * S).toFixed(2) + "px";
 
+    /* ---- HEADER (image OR text + meta) ---- */
     let head = "";
+
     if (headerImage) {
       head += `
         <div class="w-full mb-1.5 leading-none">
@@ -633,38 +759,46 @@ tailwind.config = {
       }
     }
 
-    /* fresh, clean editable fields — no colons, no dashes */
-    const fieldStyle = `padding:0 ${px(4)}; min-width:${px(120)};`;
-    const labelStyle = `padding:0 ${px(4)}; min-width:${px(60)};`;
+    const fieldStyle = `min-width:${px(150)}; padding:0 ${px(4)} ${px(1)};`;
+    const labelStyle = `outline:none; padding:0 ${px(3)}; transition:background .15s;`;
 
     head += `
-      <div class="flex justify-between items-start gap-8 font-semibold
+      <div class="flex justify-between items-center gap-8 font-semibold
                   border-t-[3px] border-b-[3px] border-double border-brand"
-           style="font-size:${px(16)}; padding:${px(14)} ${px(6)}; margin:${px(10)} 0 ${px(18)};">
+           style="font-size:${px(16)}; padding:${px(12)} ${px(6)} ${px(9)}; margin:${px(10)} 0 ${px(18)};">
 
         <span class="inline-flex items-baseline gap-1.5">
           <span data-field="batchLabel"
                 contenteditable="true"
                 spellcheck="false"
-                style="${labelStyle}">${esc(batchLabel)}</span><b class="font-bold text-brand tracking-wider"
-                contenteditable="true"
-                data-field="batch"
-                spellcheck="false"
-                style="${fieldStyle}">${batch ? esc(batch) : ""}</b>
+                style="${labelStyle}">${esc(batchLabel)}</span>
+          :
+          <b class="font-bold text-brand tracking-wider inline-block border-b border-dotted border-slate-500"
+             style="${fieldStyle}"
+             contenteditable="true"
+             data-field="batch"
+             data-placeholder="______________"
+             spellcheck="false"
+             >${batch ? esc(batch) : ""}</b>
         </span>
 
         <span class="inline-flex items-baseline gap-1.5">
           <span data-field="districtLabel"
                 contenteditable="true"
                 spellcheck="false"
-                style="${labelStyle}">${esc(districtLabel)}</span><b class="font-bold text-brand tracking-wider"
-                contenteditable="true"
-                data-field="district"
-                spellcheck="false"
-                style="${fieldStyle}">${district ? esc(district) : ""}</b>
+                style="${labelStyle}">${esc(districtLabel)}</span>
+          :
+          <b class="font-bold text-brand tracking-wider inline-block border-b border-dotted border-slate-500"
+             style="${fieldStyle}"
+             contenteditable="true"
+             data-field="district"
+             data-placeholder="______________"
+             spellcheck="false"
+             >${district ? esc(district) : ""}</b>
         </span>
       </div>`;
 
+    /* ---- TITLE ---- */
     let titleBlock = "";
     if (title) {
       titleBlock = `
@@ -674,6 +808,7 @@ tailwind.config = {
         </div>`;
     }
 
+    /* ---- TEXT BEFORE ROLLS ---- */
     let beforeBlock = "";
     if (beforeText.trim()) {
       const html = esc(beforeText.trim()).replace(/\n/g, "<br>");
@@ -684,46 +819,178 @@ tailwind.config = {
         </div>`;
     }
 
-    let rollsBlock = "";
-    if (!rolls.length) {
-      rollsBlock = `
-        <div class="text-center text-slate-400"
-             style="padding:${px(40)} 0; font-size:${px(14)};">
-          কোনো রোল নম্বর দেওয়া হয়নি… (No roll numbers entered)
-        </div>`;
-    } else {
-      const sep = separator !== "" ? separator : ",";
-      const parts = rolls.map((r, i) => {
-        const isLast = i === rolls.length - 1;
-        const tail = isLast ? "" : `<span class="text-slate-400 select-none">${esc(sep)}</span>`;
-        return `<span class="text-brand font-bold tracking-wide whitespace-nowrap"
-                      style="font-size:${px(17)};">${esc(r)}</span>${tail}`;
-      });
-
-      rollsBlock = `
-        <div class="text-justify break-words"
-             style="font-size:${px(17)}; line-height:2;">
-          ${parts.join(" ")}
-        </div>`;
-    }
-
-    $("sheet").innerHTML = `
-      ${head}
-      ${titleBlock}
-      ${beforeBlock}
-      ${rollsBlock}
-    `;
-
-    applyPageSize();
+    return { head, titleBlock, beforeBlock };
   }
 
+  function buildRollSpan(r, sep, px) {
+    return `<span class="text-brand font-bold tracking-wide whitespace-nowrap"
+                   style="font-size:${px(17)};"
+                   >${esc(r)}<span class="text-slate-400 select-none">${esc(sep)}</span></span>`;
+  }
+
+  /* ===================================================================
+     RENDER — paginated
+     =================================================================== */
+  function render() {
+    const separator = $("separator").value;
+    rolls = parseRolls($("rolls").value);
+
+    const S = fontScale;
+    const px = (base) => (base * S).toFixed(2) + "px";
+
+    /* build the fixed head/title/before blocks once */
+    const { head, titleBlock, beforeBlock } = buildPageBlocks();
+
+    /* quick empty state if no rolls */
+    if (!rolls.length) {
+      $("sheet").innerHTML = `
+        <div class="page-wrap">
+          <div class="page-num-badge page-number">Page 1</div>
+          <div class="page-inner">
+            ${head}
+            ${titleBlock}
+            ${beforeBlock}
+            <div class="text-center text-slate-400"
+                 style="padding:${px(40)} 0; font-size:${px(14)};">
+              কোনো রোল নম্বর দেওয়া হয়নি… (No roll numbers entered)
+            </div>
+          </div>
+        </div>`;
+      applyPageSize();
+      updatePageBadge();
+      return;
+    }
+
+    const sep = separator !== "" ? separator : ",";
+    const m = getMetrics();
+
+    /* ---- build the initial page structure ---- */
+    $("sheet").innerHTML = `
+      <div class="page-wrap">
+        <div class="page-inner">
+          ${head}
+          ${titleBlock}
+          ${beforeBlock}
+          <div class="rolls-paragraph text-justify break-words"
+               style="font-size:${px(17)}; line-height:2;"></div>
+        </div>
+      </div>`;
+
+    applyPageSize();
+
+    /* ---- fill rolls page by page ---- */
+    let pageWrap = document.querySelector("#sheet .page-wrap");
+    let pageInner = pageWrap.querySelector(".page-inner");
+    let rollsPar = pageInner.querySelector(".rolls-paragraph");
+    let index = 0;
+    let pageNumber = 1;
+
+    while (index < rolls.length) {
+      /* how much vertical room is left in this page's inner box? */
+      const room = availableRoom(pageInner, rollsPar);
+
+      /* probe how many rolls fit in this room */
+      let added = 0;
+      const testLine = () => {
+        const probe = document.createElement("span");
+        probe.style.cssText = "position:absolute;visibility:hidden;white-space:nowrap;";
+        probe.style.fontSize = px(17);
+        probe.className = "text-brand font-bold tracking-wide whitespace-nowrap";
+        probe.textContent = rolls[index] + sep;
+        rollsPar.appendChild(probe);
+        const lineH = probe.offsetHeight;
+        rollsPar.removeChild(probe);
+        return lineH;
+      };
+      const lineHeight = testLine() || (17 * S * 2);
+
+      /* scroll test: append rolls one by one until overflow */
+      while (index < rolls.length) {
+        const temp = document.createElement("span");
+        temp.className = "text-brand font-bold tracking-wide whitespace-nowrap";
+        temp.style.fontSize = px(17);
+        temp.innerHTML = esc(rolls[index]) +
+          `<span class="text-slate-400 select-none">${esc(sep)}</span>`;
+
+        rollsPar.appendChild(temp);
+        const overflow = rollsPar.scrollHeight > rollsPar.clientHeight + 2 ||
+                         pageInner.scrollHeight > pageInner.clientHeight + 2;
+        if (overflow && added > 0) {
+          /* remove it — it will start the next page */
+          rollsPar.removeChild(temp);
+          break;
+        }
+        index++;
+        added++;
+      }
+
+      if (index < rolls.length) {
+        /* start a new page */
+        pageNumber++;
+        const newPage = document.createElement("div");
+        newPage.className = "page-wrap";
+        newPage.innerHTML = `
+          <div class="page-num-badge page-number">Page ${pageNumber}</div>
+          <div class="page-inner">
+            <div class="rolls-paragraph text-justify break-words"
+                 style="font-size:${px(17)}; line-height:2;"></div>
+          </div>`;
+        $("sheet").appendChild(newPage);
+        pageWrap = newPage;
+        pageInner = pageWrap.querySelector(".page-inner");
+        rollsPar = pageInner.querySelector(".rolls-paragraph");
+      }
+    }
+
+    /* ---- add page-number badges to every page ---- */
+    document.querySelectorAll("#sheet .page-wrap").forEach((w, i) => {
+      if (!w.querySelector(".page-number")) {
+        const badge = document.createElement("div");
+        badge.className = "page-number";
+        badge.textContent = "Page " + (i + 1);
+        w.insertBefore(badge, w.firstChild);
+      }
+    });
+
+    applyPageSize();
+    updatePageBadge();
+  }
+
+  /* how many pixels of vertical room remain inside the page? */
+  function availableRoom(pageInner, rollsPar) {
+    const innerH = pageInner.clientHeight;
+    let used = 0;
+    /* sum heights of all siblings before the rolls paragraph */
+    Array.from(pageInner.children).forEach((child) => {
+      if (child === rollsPar) return;
+      used += child.offsetHeight;
+      const style = getComputedStyle(child);
+      used += parseFloat(style.marginTop || 0);
+      used += parseFloat(style.marginBottom || 0);
+    });
+    return Math.max(0, innerH - used);
+  }
+
+  /* ===================================================================
+     PAGE BADGE
+     =================================================================== */
+  function updatePageBadge() {
+    const count = document.querySelectorAll("#sheet .page-wrap").length;
+    $("pageBadge").textContent = count === 1 ? "1 page" : count + " pages";
+  }
+
+  /* ===================================================================
+     FONT
+     =================================================================== */
   function applyFont() {
     bnFontKey = $("bnFont").value;
     fontScale = parseFloat($("fontScale").value) || 1;
 
     const family = FONT_MAP[bnFontKey] || FONT_MAP.bengali;
 
-    $("sheet").style.fontFamily = family;
+    document.querySelectorAll("#sheet .page-inner").forEach((inner) => {
+      inner.style.fontFamily = family;
+    });
     $("fontPreview").style.fontFamily = family;
     $("fontPreviewSub").style.fontFamily = family;
 
@@ -734,6 +1001,9 @@ tailwind.config = {
     render();
   }
 
+  /* ===================================================================
+     PAGE SIZE CONTROLS
+     =================================================================== */
   function markActivePill(preset) {
     document.querySelectorAll(".preset-pill").forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.preset === preset);
@@ -751,7 +1021,7 @@ tailwind.config = {
     $("pageH").value = displaySize(pageHmm);
 
     markActivePill(preset);
-    applyPageSize();
+    render();
   }
 
   function readCustomSize() {
@@ -767,9 +1037,12 @@ tailwind.config = {
 
     activePreset = null;
     markActivePill(null);
-    applyPageSize();
+    render();
   }
 
+  /* ===================================================================
+     HEADER IMAGE
+     =================================================================== */
   function setHeaderImage(dataUrl) {
     headerImage = dataUrl;
     const prev = $("headerPreview");
@@ -803,6 +1076,9 @@ tailwind.config = {
     reader.readAsDataURL(file);
   }
 
+  /* ===================================================================
+     EXPORT
+     =================================================================== */
   function fileName(ext) {
     const d = new Date();
     const pad = (n) => String(n).padStart(2, "0");
@@ -833,7 +1109,7 @@ tailwind.config = {
       ]);
     } catch (e) {}
 
-    const imgs = Array.from($("sheet").querySelectorAll("img"));
+    const imgs = Array.from(document.querySelectorAll("#sheet img"));
     await Promise.all(
       imgs.map((img) =>
         img.complete
@@ -843,32 +1119,64 @@ tailwind.config = {
     );
   }
 
-  async function capture() {
-    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
-    await waitForAssets();
-    const sheet = $("sheet");
-
-    return await html2canvas(sheet, {
+  async function capturePage(pageWrap) {
+    return await html2canvas(pageWrap, {
       scale: 2,
       backgroundColor: "#ffffff",
       useCORS: true,
       logging: false,
-      windowWidth: sheet.scrollWidth,
-      windowHeight: sheet.scrollHeight,
+      windowWidth: pageWrap.scrollWidth,
+      windowHeight: pageWrap.scrollHeight,
     });
+  }
+
+  async function captureAll() {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    await waitForAssets();
+
+    const pages = Array.from(document.querySelectorAll("#sheet .page-wrap"));
+    const canvases = [];
+    for (const p of pages) {
+      /* temporarily hide page-number badge */
+      const badge = p.querySelector(".page-number");
+      const prevDisplay = badge ? badge.style.display : null;
+      if (badge) badge.style.display = "none";
+
+      const c = await capturePage(p);
+      canvases.push(c);
+
+      if (badge) badge.style.display = prevDisplay || "";
+    }
+    return canvases;
   }
 
   async function downloadJPG() {
     setBusy(true, "Generating JPG…");
     try {
-      const canvas = await capture();
-      const link = document.createElement("a");
-      link.download = fileName("jpg");
-      link.href = canvas.toDataURL("image/jpeg", 0.95);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      toast("✅ JPG downloaded");
+      const canvases = await captureAll();
+
+      if (canvases.length === 1) {
+        /* single page → one JPG file */
+        const link = document.createElement("a");
+        link.download = fileName("jpg");
+        link.href = canvases[0].toDataURL("image/jpeg", 0.95);
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else {
+        /* multiple pages → one JPG per page */
+        canvases.forEach((c, i) => {
+          const link = document.createElement("a");
+          const base = fileName("jpg").replace(/\.jpg$/, "");
+          link.download = `${base}_page-${i + 1}.jpg`;
+          link.href = c.toDataURL("image/jpeg", 0.95);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+        });
+      }
+
+      toast("✅ JPG downloaded (" + canvases.length + " page" + (canvases.length > 1 ? "s" : "") + ")");
     } catch (e) {
       console.error(e);
       toast("❌ Could not create JPG");
@@ -880,8 +1188,7 @@ tailwind.config = {
   async function downloadPDF() {
     setBusy(true, "Generating PDF…");
     try {
-      const canvas = await capture();
-      const img = canvas.toDataURL("image/jpeg", 0.95);
+      const canvases = await captureAll();
 
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({
@@ -892,31 +1199,20 @@ tailwind.config = {
 
       const pageWidth  = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 6;
 
-      const imgW = pageWidth - margin * 2;
-      const imgH = (canvas.height * imgW) / canvas.width;
+      canvases.forEach((canvas, i) => {
+        if (i > 0) pdf.addPage([pageWmm, pageHmm], pageWmm > pageHmm ? "landscape" : "portrait");
 
-      if (imgH <= pageHeight - margin * 2) {
-        pdf.addImage(img, "JPEG", margin, margin, imgW, imgH);
-      } else {
-        const usableH = pageHeight - margin * 2;
-        let heightLeft = imgH;
-        let y = margin;
+        const img = canvas.toDataURL("image/jpeg", 0.95);
+        const imgW = pageWidth;
+        const imgH = (canvas.height * imgW) / canvas.width;
 
-        pdf.addImage(img, "JPEG", margin, y, imgW, imgH);
-        heightLeft -= usableH;
-
-        while (heightLeft > 0) {
-          pdf.addPage([pageWmm, pageHmm], pageWmm > pageHmm ? "landscape" : "portrait");
-          y = margin - (imgH - heightLeft);
-          pdf.addImage(img, "JPEG", margin, y, imgW, imgH);
-          heightLeft -= usableH;
-        }
-      }
+        /* fill the page; keep aspect ratio */
+        pdf.addImage(img, "JPEG", 0, 0, imgW, Math.min(imgH, pageHeight));
+      });
 
       pdf.save(fileName("pdf"));
-      toast("✅ PDF downloaded");
+      toast("✅ PDF downloaded (" + canvases.length + " page" + (canvases.length > 1 ? "s" : "") + ")");
     } catch (e) {
       console.error(e);
       toast("❌ Could not create PDF");
@@ -925,11 +1221,14 @@ tailwind.config = {
     }
   }
 
+  /* ===================================================================
+     EVENT BINDING
+     =================================================================== */
   function bind() {
     let timer;
     const debounced = () => {
       clearTimeout(timer);
-      timer = setTimeout(render, 250);
+      timer = setTimeout(render, 260);
     };
 
     ["school", "exam",
@@ -954,7 +1253,6 @@ tailwind.config = {
     document.querySelectorAll(".preset-pill").forEach((btn) => {
       btn.addEventListener("click", () => {
         applyPreset(btn.dataset.preset);
-        render();
         const p = PRESETS[btn.dataset.preset];
         toast(`Preset: ${p.w} × ${p.h} mm`);
       });
@@ -971,7 +1269,7 @@ tailwind.config = {
       currentUnit = $("pageUnit").value;
       $("pageW").value = displaySize(pageWmm);
       $("pageH").value = displaySize(pageHmm);
-      applyPageSize();
+      render();
       toast("Unit: " + currentUnit);
     });
 
@@ -988,17 +1286,18 @@ tailwind.config = {
 
       $("pageW").value = displaySize(pageWmm);
       $("pageH").value = displaySize(pageHmm);
-      applyPageSize();
+      render();
       toast("Orientation flipped");
     });
 
     $("btnResetSize").addEventListener("click", () => {
       applyPreset("a4-portrait");
-      render();
       toast("Reset to A4 Portrait");
     });
 
-    $("pagePad").addEventListener("input", applyPageSize);
+    ["pagePad", "pageGap"].forEach((id) => {
+      $(id).addEventListener("input", render);
+    });
 
     $("headerFile").addEventListener("change", (e) => {
       handleFile(e.target.files && e.target.files[0]);
@@ -1036,7 +1335,7 @@ tailwind.config = {
     $("btnSample").addEventListener("click", () => {
       $("rolls").value = SAMPLE_ROLLS;
       render();
-      toast("Sample rolls loaded");
+      toast("Sample rolls loaded (" + parseRolls(SAMPLE_ROLLS).length + ")");
     });
 
     $("btnClear").addEventListener("click", () => {
@@ -1051,7 +1350,7 @@ tailwind.config = {
     $("btnPdf").addEventListener("click", downloadPDF);
     $("btnPdf2").addEventListener("click", downloadPDF);
 
-    /* ---------- in-sheet editing for labels AND values ---------- */
+    /* ---------- in-sheet editing ---------- */
     const sheet = $("sheet");
 
     sheet.addEventListener("input", (e) => {
@@ -1079,7 +1378,10 @@ tailwind.config = {
 
         let text = (el.textContent || "").replace(/\s+/g, " ").trim();
 
-        if (!text) {
+        if (field === "batchLabel" && !text) text = "ব্যাচ নং";
+        if (field === "districtLabel" && !text) text = "জেলা";
+
+        if (!text && (field === "batch" || field === "district")) {
           el.innerHTML = "";
         } else if (el.textContent !== text) {
           el.textContent = text;
@@ -1101,9 +1403,12 @@ tailwind.config = {
     });
   }
 
+  /* ===================================================================
+     INIT
+     =================================================================== */
   function init() {
     $("rolls").value = SAMPLE_ROLLS;
-    applyPreset("a4-portrait");
+    markActivePill("a4-portrait");
     bind();
     applyFont();
 

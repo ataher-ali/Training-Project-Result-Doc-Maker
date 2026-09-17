@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>TPRM — Training Project Result Doc Maker</title>
+
+<!-- Google Bangla Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;500;600;700;800&family=Noto+Serif+Bengali:wght@400;500;600;700;800&family=Hind+Siliguri:wght@300;400;500;600;700&family=Baloo+Da+2:wght@400;500;600;700;800&family=Atma:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        bengali:    ['"Noto Sans Bengali"',  'system-ui', 'sans-serif'],
+        serif_bn:   ['"Noto Serif Bengali"', 'Georgia',   'serif'],
+        siliguri:   ['"Hind Siliguri"',      'system-ui', 'sans-serif'],
+        baloo:      ['"Baloo Da 2"',         'system-ui', 'sans-serif'],
+        atma:       ['"Atma"',               'system-ui', 'sans-serif'],
+      },
+      colors: {
+        brand: { DEFAULT: '#0f2a5c', light: '#1d4ed8' }
+      },
+      boxShadow: { sheet: '0 12px 45px rgba(15,42,92,.18)' }
+    }
+  }
+}
+</script>
+
+<style>
+  textarea.mono { font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+  #sheet { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+  .preset-pill { transition: all .15s ease; }
+  .preset-pill.active {
+    background: #1d4ed8 !important;
+    color: #fff !important;
+    border-color: #1d4ed8 !important;
+    box-shadow: 0 2px 8px rgba(29,78,216,.35);
+  }
+
+  /* -------- all contenteditable fields on the sheet -------- */
+  #sheet [data-field] {
+    cursor: text;
+    outline: none;
+    transition: background .15s, box-shadow .15s;
+    display: inline-block;
+    min-width: 3ch;
+    min-height: 1.2em;
+  }
+  #sheet [data-field]:hover {
+    background: #f1f7ff;
+    border-radius: 3px;
+  }
+  #sheet [data-field]:focus {
+    background: #eef4ff;
+    border-radius: 3px;
+    box-shadow: 0 0 0 2px rgba(29,78,216,.28);
+  }
+  /* when empty, show a soft click-target hint only on hover */
+  #sheet [data-field]:empty:hover::after {
+    content: "click to type";
+    color: #cbd5e1;
+    font-size: 0.7em;
+    font-weight: 500;
+    margin-left: 4px;
+  }
+
+  @media print {
+    .no-print { display: none !important; }
+    body { background: #fff !important; display: block !important; }
+    main { display: block !important; }
+    .preview-area { padding: 0 !important; overflow: visible !important; }
+    .sheet-wrap { box-shadow: none !important; }
+    #sheet { padding: 0 !important; }
+    #sheet [data-field] { background: transparent !important; box-shadow: none !important; }
+    #sheet [data-field]:empty:hover::after { content: "" !important; }
+  }
+</style>
+</head>
+
+<body class="bg-slate-100 text-slate-900 min-h-screen flex flex-col">
+
+<!-- ===================== TOP BAR ===================== -->
+<header class="no-print sticky top-0 z-30 bg-gradient-to-br from-brand to-brand-light text-white px-6 py-4 flex flex-wrap items-center justify-between gap-3 shadow-lg">
+  <h1 class="flex items-center gap-3 tracking-wide">
+    <span class="text-2xl font-extrabold tracking-wider">TPRM</span>
+    <span class="text-[11px] font-semibold text-white/85 border-l border-white/30 pl-3 leading-tight">
+      Training Project<br>Result Doc Maker
+    </span>
+    <span id="sizeBadge" class="text-[10px] uppercase tracking-widest font-semibold bg-white/20 border border-white/30 rounded-full px-2.5 py-0.5 ml-1">
+      210 × 297 mm
+    </span>
+  </h1>
+
+  <div class="flex flex-wrap gap-2">
+    <button id="btnJpg"
+      class="rounded-lg px-4 py-2.5 text-sm font-semibold inline-flex items-center gap-2 transition
+             bg-white text-brand hover:bg-blue-50">
+      🖼 Download JPG
+    </button>
+    <button id="btnPdf"
+      class="rounded-lg px-4 py-2.5 text-sm font-semibold inline-flex items-center gap-2 transition
+             bg-white text-brand hover:bg-blue-50">
+      ⬇ Download PDF
+    </button>
+  </div>
+</header>
+
+<!-- ===================== LAYOUT ===================== -->
+<main class="flex-1 grid grid-cols-1 lg:grid-cols-[420px_1fr] items-start">
+
+  <!-- ============ LEFT PANEL ============ -->
+  <aside class="no-print bg-white border-b lg:border-b-0 lg:border-r border-slate-200 p-5
+                lg:sticky lg:top-[68px] lg:max-h-[calc(100vh-68px)] lg:overflow-y-auto">
+
+    <!-- ============================================= -->
+    <!--              PAGE SIZE                        -->
+    <!-- ============================================= -->
+    <div class="rounded-xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-4 mb-5">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-[12px] uppercase tracking-widest font-bold text-brand flex items-center gap-2">
+          📐 Page Size
+        </h2>
+        <span id="sizeIndicator" class="text-[10.5px] font-semibold text-slate-500 bg-white border border-slate-200 rounded-md px-2 py-0.5">
+          210 × 297 mm
+        </span>
+      </div>
+
+      <div class="mb-3">
+        <label class="block text-[11.5px] font-semibold text-slate-600 mb-1.5 uppercase tracking-wide">
+          Quick Presets
+        </label>
+        <div class="grid grid-cols-3 gap-1.5" id="presetGrid">
+          <button type="button" data-preset="a4-portrait"     class="preset-pill active rounded-md border border-slate-300 bg-white text-slate-700 text-[11.5px] font-semibold py-1.5 hover:bg-blue-50">A4 ▯</button>
+          <button type="button" data-preset="a4-landscape"    class="preset-pill rounded-md border border-slate-300 bg-white text-slate-700 text-[11.5px] font-semibold py-1.5 hover:bg-blue-50">A4 ▭</button>
+          <button type="button" data-preset="a3-portrait"     class="preset-pill rounded-md border border-slate-300 bg-white text-slate-700 text-[11.5px] font-semibold py-1.5 hover:bg-blue-50">A3 ▯</button>
+          <button type="button" data-preset="a3-landscape"    class="preset-pill rounded-md border border-slate-300 bg-white text-slate-700 text-[11.5px] font-semibold py-1.5 hover:bg-blue-50">A3 ▭</button>
+          <button type="button" data-preset="letter-portrait" class="preset-pill rounded-md border border-slate-300 bg-white text-slate-700 text-[11.5px] font-semibold py-1.5 hover:bg-blue-50">Ltr ▯</button>
+          <button type="button" data-preset="letter-landscape" class="preset-pill rounded-md border border-slate-300 bg-white text-slate-700 text-[11.5px] font-semibold py-1.5 hover:bg-blue-50">Ltr ▭</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end mb-3">
+        <div>
+          <label for="pageW" class="block text-[11.5px] font-semibold text-slate-600 mb-1">Width</label>
+          <input type="number" id="pageW" value="210" min="1" step="any"
+            class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold
+                   outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200" />
+        </div>
+        <div>
+          <label for="pageH" class="block text-[11.5px] font-semibold text-slate-600 mb-1">Height</label>
+          <input type="number" id="pageH" value="297" min="1" step="any"
+            class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold
+                   outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200" />
+        </div>
+        <div>
+          <label for="pageUnit" class="block text-[11.5px] font-semibold text-slate-600 mb-1">Unit</label>
+          <select id="pageUnit"
+            class="rounded-lg border border-slate-300 bg-white px-2 py-2 text-sm font-semibold
+                   outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200">
+            <option value="mm" selected>mm</option>
+            <option value="cm">cm</option>
+            <option value="in">in</option>
+            <option value="px">px</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mb-3">
+        <button type="button" id="btnOrientation"
+          class="flex-1 rounded-lg border border-slate-300 bg-white text-slate-700 text-[12px] font-semibold py-2
+                 hover:bg-blue-50 inline-flex items-center justify-center gap-1.5">
+          🔄 Flip Orientation
+        </button>
+        <button type="button" id="btnResetSize"
+          class="rounded-lg border border-slate-300 bg-white text-slate-700 text-[12px] font-semibold px-3 py-2
+                 hover:bg-blue-50">
+          ↺ Reset
+        </button>
+      </div>
+
+      <div>
+        <label for="pagePad" class="block text-[11.5px] font-semibold text-slate-600 mb-1">
+          Sheet Padding <span class="font-normal text-slate-400">(px on screen)</span>
+        </label>
+        <input type="number" id="pagePad" value="40" min="0" max="200"
+          class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-sm font-semibold
+                 outline-none transition focus:border-brand-light focus:ring-2 focus:ring-blue-200" />
+      </div>
+
+      <p class="text-[10.5px] text-slate-500 mt-3 leading-relaxed">
+        Preview at <b>1 mm ≈ 3.78 px</b>. The PDF output will match exactly.
+      </p>
+    </div>
+
+    <!-- ============================================= -->
+    <!--                FONT SECTION                   -->
+    <!-- ============================================= -->
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">বাংলা ফন্ট (Bangla Font)</h2>
+
+    <div class="mb-3.5">
+      <label for="bnFont" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">Google Bangla Font</label>
+      <select id="bnFont"
+        class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+               outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200">
+        <option value="bengali" selected>Noto Sans Bengali (default)</option>
+        <option value="serif_bn">Noto Serif Bengali</option>
+        <option value="siliguri">Hind Siliguri</option>
+        <option value="baloo">Baloo Da 2</option>
+        <option value="atma">Atma</option>
+      </select>
+    </div>
+
+    <div class="mb-3.5">
+      <label for="fontScale" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+        Font Scale <span class="font-normal text-slate-400 text-[11px]">(×)</span>
+      </label>
+      <div class="flex items-center gap-3">
+        <input type="range" id="fontScale" min="0.8" max="1.6" step="0.05" value="1" class="flex-1 accent-blue-600" />
+        <span id="fontScaleVal" class="text-[12.5px] font-semibold text-brand min-w-[40px] text-right">1.00</span>
+      </div>
+    </div>
+
+    <div class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 mb-5">
+      <div class="text-[11px] uppercase tracking-widest font-bold text-slate-500 mb-1">Preview</div>
+      <div id="fontPreview" class="text-[17px] font-semibold text-brand leading-relaxed font-bengali">
+        ব্যাচ নং : ০৫ &nbsp; • &nbsp; জেলা : ঢাকা
+      </div>
+      <div id="fontPreviewSub" class="text-[13px] text-slate-600 mt-1 font-bengali">
+        নিচের রোল নম্বরগুলো পরীক্ষার জন্য নির্বাচিত — ১০১, ১০২, ১০৩
+      </div>
+    </div>
+
+    <div class="h-px bg-slate-200 my-5"></div>
+
+    <!-- ============================================= -->
+    <!--              HEADER IMAGE                     -->
+    <!-- ============================================= -->
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">Header Image</h2>
+
+    <div class="mb-4">
+      <label for="headerFile"
+        class="flex flex-col items-center justify-center gap-1 border-2 border-dashed border-slate-300 rounded-xl
+               px-4 py-4 bg-blue-50/40 hover:bg-blue-50 hover:border-brand-light cursor-pointer transition text-center">
+        <span class="text-sm font-semibold text-brand-light">📁 Upload header image</span>
+        <small class="text-[11px] text-slate-500">PNG · JPG · WEBP — shown at the top of the sheet</small>
+      </label>
+      <input type="file" id="headerFile" accept="image/*" hidden />
+
+      <div id="headerPreview" class="mt-2.5 hidden relative border border-slate-200 rounded-xl overflow-hidden bg-white">
+        <img id="headerThumb" alt="Header preview" class="block w-full h-auto max-h-44 object-contain bg-white" />
+        <button id="btnRemoveHeader" type="button"
+          class="absolute top-1.5 right-1.5 rounded-md bg-slate-900/80 hover:bg-red-700 text-white text-[11px] font-semibold px-2.5 py-1">
+          ✕ Remove
+        </button>
+      </div>
+    </div>
+
+    <div id="textHeaderBox" class="transition-opacity">
+      <div class="mb-3.5">
+        <label for="school" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+          Institute Name
+        </label>
+        <input type="text" id="school" value="ই-লার্নিং অ্যান্ড আর্নিং লিঃ"
+          class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-bengali
+                 outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200" />
+      </div>
+      <div class="mb-3.5">
+        <label for="exam" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+          Examination Name <span class="font-normal text-slate-400 text-[11px]">(optional)</span>
+        </label>
+        <input type="text" id="exam" placeholder="Type exam name…"
+          class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+                 outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200" />
+      </div>
+    </div>
+
+    <div class="h-px bg-slate-200 my-5"></div>
+
+    <!-- ============================================= -->
+    <!--              BATCH / DISTRICT                 -->
+    <!-- ============================================= -->
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">ব্যাচ ও জেলা</h2>
+
+    <div class="rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-900 text-[11.5px] leading-relaxed px-3 py-2.5 mb-3.5">
+      💡 <b>Labels</b> and <b>values</b> are editable directly on the sheet — just click and type.<br>
+      Empty fields stay fully blank (no dashes, no placeholder).
+    </div>
+
+    <!-- Labels row -->
+    <div class="grid grid-cols-2 gap-2.5 mb-3">
+      <div>
+        <label for="batchLabel" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+          Label 1 <span class="font-normal text-slate-400 text-[11px]">(Batch)</span>
+        </label>
+        <input type="text" id="batchLabel" placeholder="(empty)"
+          class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+                 outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali" />
+      </div>
+      <div>
+        <label for="districtLabel" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+          Label 2 <span class="font-normal text-slate-400 text-[11px]">(District)</span>
+        </label>
+        <input type="text" id="districtLabel" placeholder="(empty)"
+          class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+                 outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali" />
+      </div>
+    </div>
+
+    <!-- Values row -->
+    <div class="grid grid-cols-2 gap-2.5">
+      <div class="mb-3.5">
+        <label for="batch" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+          Value 1 <span class="font-normal text-slate-400 text-[11px]">(Batch)</span>
+        </label>
+        <input type="text" id="batch" placeholder="যেমন: ০৫"
+          class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+                 outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali" />
+      </div>
+      <div class="mb-3.5">
+        <label for="district" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+          Value 2 <span class="font-normal text-slate-400 text-[11px]">(District)</span>
+        </label>
+        <input type="text" id="district" placeholder="যেমন: ঢাকা"
+          class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+                 outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali" />
+      </div>
+    </div>
+
+    <div class="h-px bg-slate-200 my-5"></div>
+
+    <!-- ============================================= -->
+    <!--                   TITLE                       -->
+    <!-- ============================================= -->
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">
+      শিরোনাম (Title)
+    </h2>
+
+    <div class="mb-5">
+      <label for="title" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+        শীটের উপরে শিরোনাম হিসেবে দেখাবে <span class="font-normal text-slate-400 text-[11px]">— optional</span>
+      </label>
+      <input type="text" id="title" placeholder="যেমন: চূড়ান্ত ফলাফল"
+        class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm font-bengali
+               outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200" />
+    </div>
+
+    <!-- ============================================= -->
+    <!--             TEXT BEFORE ROLLS                 -->
+    <!-- ============================================= -->
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">
+      Roll এর আগে লেখা (Text Before Rolls)
+    </h2>
+
+    <div class="mb-5">
+      <label for="beforeText" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+        এই লেখাটি roll তালিকার আগে দেখাবে <span class="font-normal text-slate-400 text-[11px]">— multi-line supported</span>
+      </label>
+      <textarea id="beforeText" rows="4" spellcheck="false"
+        placeholder="যেমন: নিচের রোল নম্বরগুলো পরীক্ষার জন্য নির্বাচিত…"
+        class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+               leading-relaxed outline-none transition resize-y
+               focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200 font-bengali"></textarea>
+    </div>
+
+    <div class="h-px bg-slate-200 my-5"></div>
+
+    <!-- ============================================= -->
+    <!--                 ROLLS                         -->
+    <!-- ============================================= -->
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">Roll Numbers</h2>
+
+    <div class="rounded-lg border border-blue-200 bg-blue-50 text-blue-900 text-[11.5px] leading-relaxed px-3 py-2.5 mb-3.5">
+      শুধু <b class="text-brand">রোল নম্বর</b> লিখুন — প্রতি লাইনে একটি।<br>
+      Type <b class="text-brand">only the Roll</b> — one per line.
+    </div>
+
+    <div class="mb-3.5">
+      <label for="rolls" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+        Roll Numbers <span class="font-normal text-slate-400 text-[11px]">— one per line</span>
+      </label>
+      <textarea id="rolls" spellcheck="false" placeholder="101&#10;102&#10;103"
+        class="mono w-full min-h-[200px] rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-[14px]
+               leading-[1.75] tracking-wide outline-none transition resize-y
+               focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200"></textarea>
+    </div>
+
+    <div class="mb-3.5">
+      <label for="separator" class="block text-[12.5px] font-semibold text-slate-700 mb-1.5">
+        Separator <span class="font-normal text-slate-400 text-[11px]">(between rolls)</span>
+      </label>
+      <input type="text" id="separator" value=","
+        class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm
+               outline-none transition focus:border-brand-light focus:bg-white focus:ring-2 focus:ring-blue-200" />
+    </div>
+
+    <div class="grid grid-cols-2 gap-2.5 mb-2.5">
+      <button id="btnSample"
+        class="rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200">
+        Load Sample Rolls
+      </button>
+      <button id="btnClear"
+        class="rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200">
+        Clear All
+      </button>
+    </div>
+
+    <button id="btnRender"
+      class="w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-brand-light text-white hover:bg-blue-700 mb-5">
+      ↻ Refresh Sheet
+    </button>
+
+    <div class="h-px bg-slate-200 my-5"></div>
+
+    <h2 class="text-[12px] uppercase tracking-widest font-bold text-slate-500 mb-3">Export</h2>
+    <div class="grid grid-cols-2 gap-2.5">
+      <button id="btnJpg2"
+        class="rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200">
+        🖼 JPG
+      </button>
+      <button id="btnPdf2"
+        class="rounded-lg px-4 py-2.5 text-sm font-semibold transition bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200">
+        ⬇ PDF
+      </button>
+    </div>
+  </aside>
+
+  <!-- ============ RIGHT : PREVIEW ============ -->
+  <section class="preview-area p-6 flex justify-center items-start overflow-auto">
+    <div class="sheet-wrap bg-white shadow-sheet">
+      <div id="sheet" class="bg-white font-bengali text-slate-900"></div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ FOOTER ============ -->
+<div class="print:hidden w-full text-center py-6 mt-auto text-sm text-gray-500">
+    Developed by <a href="https://ataher.vercel.app/" target="_blank" class="text-blue-600 hover:underline font-semibold">Ataher Ali</a>
+</div>
+
+<div id="toast"
+  class="fixed left-1/2 bottom-7 -translate-x-1/2 translate-y-5 opacity-0 pointer-events-none
+         bg-slate-900 text-white px-4 py-2.5 rounded-lg text-sm font-semibold
+         shadow-2xl transition-all duration-300 z-50">
+</div>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+(function () {
+  "use strict";
+
+  const $ = (id) => document.getElementById(id);
+
+  const SAMPLE_ROLLS = `101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122
+123
+124
+125
+126
+127
+128
+129
+130`;
+
+  const PRESETS = {
+    "a4-portrait":     { w: 210, h: 297 },
+    "a4-landscape":    { w: 297, h: 210 },
+    "a3-portrait":     { w: 297, h: 420 },
+    "a3-landscape":    { w: 420, h: 297 },
+    "letter-portrait": { w: 216, h: 279 },
+    "letter-landscape":{ w: 279, h: 216 },
+  };
+
+  const UNIT_TO_MM = {
+    mm: 1,
+    cm: 10,
+    in: 25.4,
+    px: 25.4 / 96,
+  };
+  const MM_TO_PX = 3.7795275591;
+
+  const FONT_MAP = {
+    bengali:  '"Noto Sans Bengali", system-ui, sans-serif',
+    serif_bn: '"Noto Serif Bengali", Georgia, serif',
+    siliguri: '"Hind Siliguri", system-ui, sans-serif',
+    baloo:    '"Baloo Da 2", system-ui, sans-serif',
+    atma:     '"Atma", system-ui, sans-serif',
+  };
+
+  let headerImage = null;
+  let rolls = [];
+  let pageWmm = 210;
+  let pageHmm = 297;
+  let currentUnit = "mm";
+  let activePreset = "a4-portrait";
+  let bnFontKey = "bengali";
+  let fontScale = 1;
+
+  const esc = (s) =>
+    String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+
+  const val = (id) => ($(id).value || "").trim();
+
+  function toast(msg) {
+    const t = $("toast");
+    t.textContent = msg;
+    t.classList.remove("opacity-0", "translate-y-5");
+    t.classList.add("opacity-100", "translate-y-0");
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => {
+      t.classList.add("opacity-0", "translate-y-5");
+      t.classList.remove("opacity-100", "translate-y-0");
+    }, 2200);
+  }
+
+  function parseRolls(text) {
+    return String(text || "")
+      .split(/[\n,;|\t]+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+  }
+
+  function unitToMm(v, unit) { return v * (UNIT_TO_MM[unit] || 1); }
+  function mmToUnit(mm, unit) { return mm / (UNIT_TO_MM[unit] || 1); }
+
+  function displaySize(mm) {
+    const v = mmToUnit(mm, currentUnit);
+    if (currentUnit === "in") return v.toFixed(2);
+    if (currentUnit === "px") return Math.round(v);
+    if (currentUnit === "cm") return v.toFixed(1);
+    return Math.round(v);
+  }
+
+  function updatePrintPageRule() {
+    let style = document.getElementById("dynamicPageRule");
+    if (!style) {
+      style = document.createElement("style");
+      style.id = "dynamicPageRule";
+      document.head.appendChild(style);
+    }
+    style.textContent = `@page { size: ${pageWmm}mm ${pageHmm}mm; margin: 0; }`;
+  }
+
+  function applyPageSize() {
+    const sheet = $("sheet");
+    const pad = Number(val("pagePad"));
+    const padPx = isNaN(pad) ? 40 : pad;
+
+    const wPx = Math.round(pageWmm * MM_TO_PX);
+    const hPx = Math.round(pageHmm * MM_TO_PX);
+
+    sheet.style.width = wPx + "px";
+    sheet.style.minHeight = hPx + "px";
+    sheet.style.padding = padPx + "px";
+    sheet.style.boxSizing = "border-box";
+    sheet.style.fontFamily = FONT_MAP[bnFontKey] || FONT_MAP.bengali;
+
+    const label = `${displaySize(pageWmm)} × ${displaySize(pageHmm)} ${currentUnit}`;
+    $("sizeIndicator").textContent = label;
+    $("sizeBadge").textContent = label;
+
+    updatePrintPageRule();
+  }
+
+  function render() {
+    const school         = val("school");
+    const exam           = val("exam");
+    const batchLabel     = val("batchLabel");
+    const districtLabel  = val("districtLabel");
+    const batch          = val("batch");
+    const district       = val("district");
+    const title          = val("title");
+    const separator      = $("separator").value;
+    const beforeText     = $("beforeText").value;
+
+    rolls = parseRolls($("rolls").value);
+
+    const S = fontScale;
+    const px = (base) => (base * S).toFixed(2) + "px";
+
+    let head = "";
+    if (headerImage) {
+      head += `
+        <div class="w-full mb-1.5 leading-none">
+          <img src="${headerImage}" alt="Header" class="block w-full h-auto" />
+        </div>`;
+    } else if (school || exam) {
+      if (school) {
+        head += `
+          <div class="text-center font-bold tracking-wide text-brand"
+               style="font-size:${px(28)}; line-height:1.35;">
+            ${esc(school)}
+          </div>`;
+      }
+      if (exam) {
+        head += `
+          <div class="text-center italic text-slate-600"
+               style="font-size:${px(16)}; margin-top:${px(4)};">
+            ${esc(exam)}
+          </div>`;
+      }
+    }
+
+    /* fresh, clean editable fields — no colons, no dashes */
+    const fieldStyle = `padding:0 ${px(4)}; min-width:${px(120)};`;
+    const labelStyle = `padding:0 ${px(4)}; min-width:${px(60)};`;
+
+    head += `
+      <div class="flex justify-between items-start gap-8 font-semibold
+                  border-t-[3px] border-b-[3px] border-double border-brand"
+           style="font-size:${px(16)}; padding:${px(14)} ${px(6)}; margin:${px(10)} 0 ${px(18)};">
+
+        <span class="inline-flex items-baseline gap-1.5">
+          <span data-field="batchLabel"
+                contenteditable="true"
+                spellcheck="false"
+                style="${labelStyle}">${esc(batchLabel)}</span><b class="font-bold text-brand tracking-wider"
+                contenteditable="true"
+                data-field="batch"
+                spellcheck="false"
+                style="${fieldStyle}">${batch ? esc(batch) : ""}</b>
+        </span>
+
+        <span class="inline-flex items-baseline gap-1.5">
+          <span data-field="districtLabel"
+                contenteditable="true"
+                spellcheck="false"
+                style="${labelStyle}">${esc(districtLabel)}</span><b class="font-bold text-brand tracking-wider"
+                contenteditable="true"
+                data-field="district"
+                spellcheck="false"
+                style="${fieldStyle}">${district ? esc(district) : ""}</b>
+        </span>
+      </div>`;
+
+    let titleBlock = "";
+    if (title) {
+      titleBlock = `
+        <div class="text-center font-bold text-brand"
+             style="font-size:${px(22)}; line-height:1.4; margin:${px(4)} 0 ${px(14)}; letter-spacing:.3px;">
+          ${esc(title)}
+        </div>`;
+    }
+
+    let beforeBlock = "";
+    if (beforeText.trim()) {
+      const html = esc(beforeText.trim()).replace(/\n/g, "<br>");
+      beforeBlock = `
+        <div class="text-slate-800 break-words"
+             style="font-size:${px(15)}; line-height:1.8; margin-bottom:${px(16)};">
+          ${html}
+        </div>`;
+    }
+
+    let rollsBlock = "";
+    if (!rolls.length) {
+      rollsBlock = `
+        <div class="text-center text-slate-400"
+             style="padding:${px(40)} 0; font-size:${px(14)};">
+          কোনো রোল নম্বর দেওয়া হয়নি… (No roll numbers entered)
+        </div>`;
+    } else {
+      const sep = separator !== "" ? separator : ",";
+      const parts = rolls.map((r, i) => {
+        const isLast = i === rolls.length - 1;
+        const tail = isLast ? "" : `<span class="text-slate-400 select-none">${esc(sep)}</span>`;
+        return `<span class="text-brand font-bold tracking-wide whitespace-nowrap"
+                      style="font-size:${px(17)};">${esc(r)}</span>${tail}`;
+      });
+
+      rollsBlock = `
+        <div class="text-justify break-words"
+             style="font-size:${px(17)}; line-height:2;">
+          ${parts.join(" ")}
+        </div>`;
+    }
+
+    $("sheet").innerHTML = `
+      ${head}
+      ${titleBlock}
+      ${beforeBlock}
+      ${rollsBlock}
+    `;
+
+    applyPageSize();
+  }
+
+  function applyFont() {
+    bnFontKey = $("bnFont").value;
+    fontScale = parseFloat($("fontScale").value) || 1;
+
+    const family = FONT_MAP[bnFontKey] || FONT_MAP.bengali;
+
+    $("sheet").style.fontFamily = family;
+    $("fontPreview").style.fontFamily = family;
+    $("fontPreviewSub").style.fontFamily = family;
+
+    $("fontPreview").style.fontSize = (17 * fontScale).toFixed(2) + "px";
+    $("fontPreviewSub").style.fontSize = (13 * fontScale).toFixed(2) + "px";
+    $("fontScaleVal").textContent = fontScale.toFixed(2);
+
+    render();
+  }
+
+  function markActivePill(preset) {
+    document.querySelectorAll(".preset-pill").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.preset === preset);
+    });
+  }
+
+  function applyPreset(preset) {
+    const p = PRESETS[preset];
+    if (!p) return;
+    pageWmm = p.w;
+    pageHmm = p.h;
+    activePreset = preset;
+
+    $("pageW").value = displaySize(pageWmm);
+    $("pageH").value = displaySize(pageHmm);
+
+    markActivePill(preset);
+    applyPageSize();
+  }
+
+  function readCustomSize() {
+    const w = parseFloat($("pageW").value);
+    const h = parseFloat($("pageH").value);
+    if (!isNaN(w) && w > 0) pageWmm = unitToMm(w, currentUnit);
+    if (!isNaN(h) && h > 0) pageHmm = unitToMm(h, currentUnit);
+
+    if (pageWmm < 20) pageWmm = 20;
+    if (pageHmm < 20) pageHmm = 20;
+    if (pageWmm > 2000) pageWmm = 2000;
+    if (pageHmm > 2000) pageHmm = 2000;
+
+    activePreset = null;
+    markActivePill(null);
+    applyPageSize();
+  }
+
+  function setHeaderImage(dataUrl) {
+    headerImage = dataUrl;
+    const prev = $("headerPreview");
+    const thumb = $("headerThumb");
+    const textBox = $("textHeaderBox");
+
+    if (dataUrl) {
+      thumb.src = dataUrl;
+      prev.classList.remove("hidden");
+      textBox.classList.add("opacity-40", "pointer-events-none");
+    } else {
+      thumb.removeAttribute("src");
+      prev.classList.add("hidden");
+      textBox.classList.remove("opacity-40", "pointer-events-none");
+    }
+    render();
+  }
+
+  function handleFile(file) {
+    if (!file) return;
+    if (!/^image\//.test(file.type)) {
+      toast("❌ Please choose an image file");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setHeaderImage(e.target.result);
+      toast("✅ Header image set");
+    };
+    reader.onerror = () => toast("❌ Could not read that image");
+    reader.readAsDataURL(file);
+  }
+
+  function fileName(ext) {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, "0");
+    const stamp = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}`;
+    return `TPRM_${stamp}.${ext}`;
+  }
+
+  function setBusy(busy, label) {
+    ["btnPdf", "btnJpg", "btnPdf2", "btnJpg2", "btnRender"].forEach((id) => {
+      const el = $(id);
+      if (el) el.disabled = busy;
+    });
+    if (busy && label) toast(label);
+  }
+
+  async function waitForAssets() {
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch (e) {}
+    }
+    try {
+      await Promise.all([
+        document.fonts.load('400 16px "Noto Sans Bengali"'),
+        document.fonts.load('700 16px "Noto Sans Bengali"'),
+        document.fonts.load('400 16px "Noto Serif Bengali"'),
+        document.fonts.load('400 16px "Hind Siliguri"'),
+        document.fonts.load('400 16px "Baloo Da 2"'),
+        document.fonts.load('400 16px "Atma"'),
+      ]);
+    } catch (e) {}
+
+    const imgs = Array.from($("sheet").querySelectorAll("img"));
+    await Promise.all(
+      imgs.map((img) =>
+        img.complete
+          ? Promise.resolve()
+          : new Promise((res) => { img.onload = img.onerror = res; })
+      )
+    );
+  }
+
+  async function capture() {
+    if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+    await waitForAssets();
+    const sheet = $("sheet");
+
+    return await html2canvas(sheet, {
+      scale: 2,
+      backgroundColor: "#ffffff",
+      useCORS: true,
+      logging: false,
+      windowWidth: sheet.scrollWidth,
+      windowHeight: sheet.scrollHeight,
+    });
+  }
+
+  async function downloadJPG() {
+    setBusy(true, "Generating JPG…");
+    try {
+      const canvas = await capture();
+      const link = document.createElement("a");
+      link.download = fileName("jpg");
+      link.href = canvas.toDataURL("image/jpeg", 0.95);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast("✅ JPG downloaded");
+    } catch (e) {
+      console.error(e);
+      toast("❌ Could not create JPG");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function downloadPDF() {
+    setBusy(true, "Generating PDF…");
+    try {
+      const canvas = await capture();
+      const img = canvas.toDataURL("image/jpeg", 0.95);
+
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({
+        orientation: pageWmm > pageHmm ? "landscape" : "portrait",
+        unit: "mm",
+        format: [pageWmm, pageHmm],
+      });
+
+      const pageWidth  = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 6;
+
+      const imgW = pageWidth - margin * 2;
+      const imgH = (canvas.height * imgW) / canvas.width;
+
+      if (imgH <= pageHeight - margin * 2) {
+        pdf.addImage(img, "JPEG", margin, margin, imgW, imgH);
+      } else {
+        const usableH = pageHeight - margin * 2;
+        let heightLeft = imgH;
+        let y = margin;
+
+        pdf.addImage(img, "JPEG", margin, y, imgW, imgH);
+        heightLeft -= usableH;
+
+        while (heightLeft > 0) {
+          pdf.addPage([pageWmm, pageHmm], pageWmm > pageHmm ? "landscape" : "portrait");
+          y = margin - (imgH - heightLeft);
+          pdf.addImage(img, "JPEG", margin, y, imgW, imgH);
+          heightLeft -= usableH;
+        }
+      }
+
+      pdf.save(fileName("pdf"));
+      toast("✅ PDF downloaded");
+    } catch (e) {
+      console.error(e);
+      toast("❌ Could not create PDF");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function bind() {
+    let timer;
+    const debounced = () => {
+      clearTimeout(timer);
+      timer = setTimeout(render, 250);
+    };
+
+    ["school", "exam",
+     "batchLabel", "districtLabel",
+     "batch", "district",
+     "title", "rolls", "separator", "beforeText"].forEach((id) => {
+      const el = $(id);
+      if (el) el.addEventListener("input", debounced);
+    });
+
+    $("bnFont").addEventListener("change", () => {
+      applyFont();
+      toast("Font: " + $("bnFont").options[$("bnFont").selectedIndex].text);
+    });
+
+    $("fontScale").addEventListener("input", () => {
+      fontScale = parseFloat($("fontScale").value) || 1;
+      $("fontScaleVal").textContent = fontScale.toFixed(2);
+      applyFont();
+    });
+
+    document.querySelectorAll(".preset-pill").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        applyPreset(btn.dataset.preset);
+        render();
+        const p = PRESETS[btn.dataset.preset];
+        toast(`Preset: ${p.w} × ${p.h} mm`);
+      });
+    });
+
+    ["pageW", "pageH"].forEach((id) => {
+      $(id).addEventListener("input", () => {
+        readCustomSize();
+        render();
+      });
+    });
+
+    $("pageUnit").addEventListener("change", () => {
+      currentUnit = $("pageUnit").value;
+      $("pageW").value = displaySize(pageWmm);
+      $("pageH").value = displaySize(pageHmm);
+      applyPageSize();
+      toast("Unit: " + currentUnit);
+    });
+
+    $("btnOrientation").addEventListener("click", () => {
+      const tmp = pageWmm;
+      pageWmm = pageHmm;
+      pageHmm = tmp;
+
+      const matched = Object.entries(PRESETS).find(
+        ([, p]) => p.w === pageWmm && p.h === pageHmm
+      );
+      activePreset = matched ? matched[0] : null;
+      markActivePill(activePreset);
+
+      $("pageW").value = displaySize(pageWmm);
+      $("pageH").value = displaySize(pageHmm);
+      applyPageSize();
+      toast("Orientation flipped");
+    });
+
+    $("btnResetSize").addEventListener("click", () => {
+      applyPreset("a4-portrait");
+      render();
+      toast("Reset to A4 Portrait");
+    });
+
+    $("pagePad").addEventListener("input", applyPageSize);
+
+    $("headerFile").addEventListener("change", (e) => {
+      handleFile(e.target.files && e.target.files[0]);
+      e.target.value = "";
+    });
+
+    $("btnRemoveHeader").addEventListener("click", () => {
+      setHeaderImage(null);
+      toast("Header image removed");
+    });
+
+    const drop = $("headerFile").previousElementSibling;
+    ["dragover", "dragenter"].forEach((ev) =>
+      drop.addEventListener(ev, (e) => {
+        e.preventDefault();
+        drop.classList.add("border-brand-light", "bg-blue-100");
+      })
+    );
+    ["dragleave", "drop"].forEach((ev) =>
+      drop.addEventListener(ev, (e) => {
+        e.preventDefault();
+        drop.classList.remove("border-brand-light", "bg-blue-100");
+      })
+    );
+    drop.addEventListener("drop", (e) => {
+      const f = e.dataTransfer.files && e.dataTransfer.files[0];
+      handleFile(f);
+    });
+
+    $("btnRender").addEventListener("click", () => {
+      render();
+      toast("Sheet refreshed");
+    });
+
+    $("btnSample").addEventListener("click", () => {
+      $("rolls").value = SAMPLE_ROLLS;
+      render();
+      toast("Sample rolls loaded");
+    });
+
+    $("btnClear").addEventListener("click", () => {
+      if (!confirm("Clear all roll numbers?")) return;
+      $("rolls").value = "";
+      render();
+      toast("Cleared");
+    });
+
+    $("btnJpg").addEventListener("click", downloadJPG);
+    $("btnJpg2").addEventListener("click", downloadJPG);
+    $("btnPdf").addEventListener("click", downloadPDF);
+    $("btnPdf2").addEventListener("click", downloadPDF);
+
+    /* ---------- in-sheet editing for labels AND values ---------- */
+    const sheet = $("sheet");
+
+    sheet.addEventListener("input", (e) => {
+      const el = e.target.closest && e.target.closest("[data-field]");
+      if (!el) return;
+      const field = el.dataset.field;
+      const sidebar = $(field);
+      if (sidebar) sidebar.value = (el.textContent || "").replace(/\s+/g, " ").trim();
+    });
+
+    sheet.addEventListener("paste", (e) => {
+      const el = e.target.closest && e.target.closest("[data-field]");
+      if (!el) return;
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData("text");
+      document.execCommand("insertText", false, text.replace(/\s+/g, " "));
+    });
+
+    sheet.addEventListener(
+      "blur",
+      (e) => {
+        const el = e.target.closest && e.target.closest("[data-field]");
+        if (!el) return;
+        const field = el.dataset.field;
+
+        let text = (el.textContent || "").replace(/\s+/g, " ").trim();
+
+        if (!text) {
+          el.innerHTML = "";
+        } else if (el.textContent !== text) {
+          el.textContent = text;
+        }
+
+        const sidebar = $(field);
+        if (sidebar) sidebar.value = text;
+      },
+      true
+    );
+
+    sheet.addEventListener("keydown", (e) => {
+      const el = e.target.closest && e.target.closest("[data-field]");
+      if (!el) return;
+      if (e.key === "Enter" || e.key === "Escape") {
+        e.preventDefault();
+        el.blur();
+      }
+    });
+  }
+
+  function init() {
+    $("rolls").value = SAMPLE_ROLLS;
+    applyPreset("a4-portrait");
+    bind();
+    applyFont();
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(render);
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
